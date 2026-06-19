@@ -79,6 +79,10 @@ export function useTasks() {
     persist(tasks.filter(t => t.id !== id));
   }, [tasks, persist]);
 
+  const updateTask = useCallback((id: string, changes: Partial<Task>) => {
+    persist(tasks.map(t => t.id === id ? { ...t, ...changes } : t));
+  }, [tasks, persist]);
+
   const clearAll = useCallback(() => {
     persist([]);
     setPending([]);
@@ -112,6 +116,7 @@ export function useTasks() {
     clearPending,
     toggleDone,
     deleteTask,
+    updateTask,
     clearAll,
     setFilter,
     setSortBy,
