@@ -1,97 +1,118 @@
-This is a new [**React Native**](https://reactnative.dev) project, bootstrapped using [`@react-native-community/cli`](https://github.com/react-native-community/cli).
+# TaskPlanner — текстовый планировщик задач
 
-# Getting Started
+> Мобильное приложение, которое превращает обычный текст в структурированный список задач. Без ИИ, без интернета, без регистрации.
 
-> **Note**: Make sure you have completed the [Set Up Your Environment](https://reactnative.dev/docs/set-up-your-environment) guide before proceeding.
+---
 
-## Step 1: Start Metro
+## О проекте
 
-First, you will need to run **Metro**, the JavaScript build tool for React Native.
+Люди часто записывают дела в виде сплошного текста: «завтра купить молоко, вечером позвонить маме, и ещё доделать отчёт до пятницы». Но такие заметки быстро превращаются в хаос.
 
-To start the Metro dev server, run the following command from the root of your React Native project:
+**Что делает приложение?**
+Вы пишете текст — система парсит даты, время, приоритеты и категории, превращая его в чек-лист задач с карточками.
 
-```sh
-# Using npm
-npm start
+**Почему не нейросеть?**
+Подход — детерминированные алгоритмы (регулярные выражения + словари ключевых слов). Это быстро, работает офлайн, и всегда понятно, почему задача появилась именно в таком виде.
 
-# OR using Yarn
-yarn start
+---
+
+## Функциональность
+
+| Возможность | Пример |
+|-------------|--------|
+| Извлечение задач из текста | «нужно сдать отчёт» → задача «сдать отчёт» |
+| Парсинг дат | «до пятницы», «завтра в 15:00», «25.12.2025» |
+| Определение приоритета | «срочно», «важно» → высокий приоритет |
+| Категоризация | «купить молоко» → Покупки, «сварить пельмени» → Готовка |
+| Подтверждение действий | глаголы без явного триггера запрашивают подтверждение перед добавлением |
+| Редактирование задач | тап по карточке открывает форму редактирования с подтверждением сохранения |
+| Сохранение | автоматически в локальное хранилище (AsyncStorage) |
+| Чекбоксы и удаление | отметка выполнения + удаление каждой задачи |
+| Фильтры и сортировка | все / активные / выполненные · по дате / приоритету / добавлению |
+
+---
+
+## История проекта
+
+Проект родился как **веб-прототип** (один HTML-файл с чистым JS) — чтобы быстро проверить идею и логику парсинга текста. После того как алгоритм показал себя рабочим, проект был **портирован на React Native + TypeScript** для использования как мобильное приложение.
+
+При портировании:
+- Вся логика парсинга (`utils/parser.ts`) перенесена почти без изменений — она не зависит от DOM
+- HTML/CSS заменены на компоненты React Native и `StyleSheet`
+- `localStorage` заменён на `@react-native-async-storage/async-storage`
+- Добавлена типизация (TypeScript) для основных сущностей (`Task`, `Priority` и т.д.)
+
+---
+
+## Структура проекта
+
+```
+src/
+├── constants/
+│   └── theme.ts          # цвета, отступы, радиусы, шрифты
+├── utils/
+│   └── parser.ts          # вся логика парсинга текста (даты, приоритеты, категории)
+├── hooks/
+│   └── useTasks.ts        # состояние задач, фильтры, сортировка, AsyncStorage
+├── components/
+│   ├── TaskCard.tsx        # карточка задачи + модалка редактирования
+│   ├── ConfirmBanner.tsx   # баннер подтверждения для неявных действий
+│   ├── FilterBar.tsx       # фильтры и сортировка
+│   └── EmptyState.tsx      # экран "задач пока нет"
+└── screens/
+    └── HomeScreen.tsx      # главный экран приложения
+App.tsx                     # точка входа
 ```
 
-## Step 2: Build and run your app
+---
 
-With Metro running, open a new terminal window/pane from the root of your React Native project, and use one of the following commands to build and run your Android or iOS app:
+## Как запустить
 
-### Android
-
-```sh
-# Using npm
-npm run android
-
-# OR using Yarn
-yarn android
+```bash
+npm install
+npx react-native run-android   # или run-ios
 ```
 
-### iOS
+Интернет не требуется — приложение работает полностью офлайн после установки.
 
-For iOS, remember to install CocoaPods dependencies (this only needs to be run on first clone or after updating native deps).
+---
 
-The first time you create a new project, run the Ruby bundler to install CocoaPods itself:
+## Как правильно формулировать текст
 
-```sh
-bundle install
+Чтобы фраза превратилась в задачу автоматически, она должна содержать одно из ключевых слов-триггеров:
+
+```
+нужно, надо, сделать, доделать, завершить, выполнить, купить, заказать,
+оплатить, позвонить, написать, отправить, встретиться, принести, забрать,
+починить, настроить, собрать, убрать, помыть, вынести, сварить,
+приготовить, испечь, пожарить, запланировать
 ```
 
-Then, and every time you update your native dependencies, run:
+Если триггера нет, но есть глагол действия (например «сварить», «купить») — приложение спросит подтверждение перед добавлением.
 
-```sh
-bundle exec pod install
+Фразы без триггеров и без распознанных глаголов — игнорируются.
+
+**Примеры:**
+```
+Завтра в 15:00 позвонить клиенту.
+Срочно нужно доделать отчёт до пятницы!
+Вечером купить молоко и хлеб.
+Записаться к врачу до понедельника — важно.
 ```
 
-For more information, please visit [CocoaPods Getting Started guide](https://guides.cocoapods.org/using/getting-started.html).
+---
 
-```sh
-# Using npm
-npm run ios
+## Планы на будущее
 
-# OR using Yarn
-yarn ios
-```
+- [ ] Уведомления о приближающихся дедлайнах
+- [ ] Кастомная иконка приложения
+- [ ] Расширение словаря триггеров (учебные/рабочие глаголы)
+- [ ] Разбиение текста по запятым и союзам, не только по знакам препинания конца предложения
 
-If everything is set up correctly, you should see your new app running in the Android Emulator, iOS Simulator, or your connected device.
+---
 
-This is one way to run your app — you can also build it directly from Android Studio or Xcode.
+## Технологии
 
-## Step 3: Modify your app
-
-Now that you have successfully run the app, let's make changes!
-
-Open `App.tsx` in your text editor of choice and make some changes. When you save, your app will automatically update and reflect these changes — this is powered by [Fast Refresh](https://reactnative.dev/docs/fast-refresh).
-
-When you want to forcefully reload, for example to reset the state of your app, you can perform a full reload:
-
-- **Android**: Press the <kbd>R</kbd> key twice or select **"Reload"** from the **Dev Menu**, accessed via <kbd>Ctrl</kbd> + <kbd>M</kbd> (Windows/Linux) or <kbd>Cmd ⌘</kbd> + <kbd>M</kbd> (macOS).
-- **iOS**: Press <kbd>R</kbd> in iOS Simulator.
-
-## Congratulations! :tada:
-
-You've successfully run and modified your React Native App. :partying_face:
-
-### Now what?
-
-- If you want to add this new React Native code to an existing application, check out the [Integration guide](https://reactnative.dev/docs/integration-with-existing-apps).
-- If you're curious to learn more about React Native, check out the [docs](https://reactnative.dev/docs/getting-started).
-
-# Troubleshooting
-
-If you're having issues getting the above steps to work, see the [Troubleshooting](https://reactnative.dev/docs/troubleshooting) page.
-
-# Learn More
-
-To learn more about React Native, take a look at the following resources:
-
-- [React Native Website](https://reactnative.dev) - learn more about React Native.
-- [Getting Started](https://reactnative.dev/docs/environment-setup) - an **overview** of React Native and how setup your environment.
-- [Learn the Basics](https://reactnative.dev/docs/getting-started) - a **guided tour** of the React Native **basics**.
-- [Blog](https://reactnative.dev/blog) - read the latest official React Native **Blog** posts.
-- [`@facebook/react-native`](https://github.com/facebook/react-native) - the Open Source; GitHub **repository** for React Native.
+- React Native + TypeScript
+- AsyncStorage для локального хранения
+- Без внешних API, без серверной части
