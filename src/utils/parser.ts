@@ -1,6 +1,10 @@
-//Types
-
 export type Priority = 'high' | 'mid' | 'low';
+
+export interface Subtask {
+  id:    string;
+  title: string;
+  done:  boolean;
+}
 
 export interface Task {
   id:        string;
@@ -12,6 +16,7 @@ export interface Task {
   category:  string;
   done:      boolean;
   created:   number;      // Date.now()
+  subtasks:  Subtask[];
 }
 
 //Dictionaries
@@ -172,6 +177,45 @@ export function cleanTitle(sentence: string): string {
     .trim();
 }
 
+//Subtask builder
+
+function makeSubtaskId(): string {
+  return `sub-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+}
+
+export function buildSubtask(title: string): Subtask {
+  return { id: makeSubtaskId(), title: title.trim(), done: false };
+}
+
+// Auto-parse subtasks from a sentence like:
+// "купить молоко, хлеб и яйца" → ["молоко", "хлеб", "яйца"]
+// "позвонить маме и написать другу" → [] (multiple verbs = separate tasks, not subtasks)
+export function parseSubtasks(sentence: string): Subtask[] {
+  const lower = sentence.toLowerCase();
+
+  // Find the trigger/verb in the sentence
+  const triggerMatch = TRIGGERS.find(t => lower.includes(t));
+  if (!triggerMatch) return [];
+
+  // Get the part after the trigger verb
+  const afterTrigger = lower.slice(lower.indexOf(triggerMatch) + triggerMatch.length).trim();
+  if (!afterTrigger) return [];
+
+  // Split by list separators: comma, "и", "а также", "плюс"
+  const parts = afterTrigger
+    .split(/,\s*|\s+и\s+|\s+а также\s+|\s+плюс\s+/)
+    .map(p => p.trim())
+    .filter(p => p.length > 1);
+
+  // Only create subtasks if there are 2+ distinct items
+  // and none of them contain another trigger verb (those would be separate tasks)
+  if (parts.length < 2) return [];
+  const hasNestedTrigger = parts.some(p => TRIGGERS.some(t => p.includes(t)));
+  if (hasNestedTrigger) return [];
+
+  return parts.map(p => buildSubtask(p));
+}
+
 //Task builder
 
 export function buildTask(sentence: string): Task {
@@ -181,6 +225,7 @@ export function buildTask(sentence: string): Task {
   const category = parseCategory(sentence);
   const rawTitle = cleanTitle(sentence);
   const title    = rawTitle.length > 0 ? rawTitle : sentence.trim();
+  const subtasks = parseSubtasks(sentence);
 
   return {
     id:        `${Date.now()}-${Math.random().toString(36).slice(2)}`,
@@ -192,6 +237,7 @@ export function buildTask(sentence: string): Task {
     category,
     done:      false,
     created:   Date.now(),
+    subtasks,
   };
 }
 

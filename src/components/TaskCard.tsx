@@ -10,19 +10,22 @@ import {
   Alert,
   Pressable,
 } from 'react-native';
-import { Task, Priority } from '../utils/parser';
+import { Task, Subtask, Priority } from '../utils/parser';
 import { colors, radius, spacing } from '../constants/theme';
 
-// ─── Types ────────────────────────────────────────────────────────────────────
+//Types
 
 interface Props {
-  task:     Task;
-  onToggle: (id: string) => void;
-  onDelete: (id: string) => void;
-  onUpdate: (id: string, changes: Partial<Task>) => void;
+  task:            Task;
+  onToggle:        (id: string) => void;
+  onDelete:        (id: string) => void;
+  onUpdate:        (id: string, changes: Partial<Task>) => void;
+  onAddSubtask:    (taskId: string, title: string) => void;
+  onToggleSubtask: (taskId: string, subtaskId: string) => void;
+  onDeleteSubtask: (taskId: string, subtaskId: string) => void;
 }
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
+//Helpers
 
 function priorityLabel(p: Task['priority']): string {
   if (p === 'high') return '🔴 Высокий';
@@ -48,12 +51,27 @@ const PRIORITY_OPTIONS: { key: Priority; label: string }[] = [
   { key: 'low',  label: '⚪ Низкий' },
 ];
 
-// ─── Component ────────────────────────────────────────────────────────────────
+//Component
 
-export default function TaskCard({ task, onToggle, onDelete, onUpdate }: Props) {
+export default function TaskCard({
+  task,
+  onToggle, onDelete, onUpdate,
+  onAddSubtask, onToggleSubtask, onDeleteSubtask,
+}: Props) {
   const priorityBadge = PRIORITY_BADGE[task.priority];
+  const subtasks = task.subtasks ?? [];
 
-  const [modalVisible, setModalVisible] = useState(false);
+  const [modalVisible,    setModalVisible]    = useState(false);
+  const [subtasksVisible, setSubtasksVisible] = useState(true);
+  const [newSubtask,      setNewSubtask]      = useState('');
+  const [addingSubtask,   setAddingSubtask]   = useState(false);
+
+  function handleAddSubtask() {
+    if (!newSubtask.trim()) return;
+    onAddSubtask(task.id, newSubtask);
+    setNewSubtask('');
+    setAddingSubtask(false);
+  }
 
   // Local draft state — only touches real task on confirmed save
   const [draftTitle,      setDraftTitle]      = useState(task.title);
@@ -207,6 +225,94 @@ export default function TaskCard({ task, onToggle, onDelete, onUpdate }: Props) 
         </TouchableOpacity>
       </Pressable>
 
+      {/* ── Subtasks block ── */}
+      {(subtasks.length > 0 || addingSubtask) && (
+        <View style={styles.subtasksWrapper}>
+          {/* Vertical connector line */}
+          <View style={styles.connectorLine} />
+
+          <View style={styles.subtasksContent}>
+            {subtasks.map((sub, index) => {
+              const isLast = index === subtasks.length - 1 && !addingSubtask;
+              return (
+                <View key={sub.id} style={styles.subtaskRow}>
+                  {/* Branch connector */}
+                  <View style={styles.branchWrapper}>
+                    <View style={styles.branchHorizontal} />
+                  </View>
+
+                  {/* Checkbox */}
+                  <TouchableOpacity
+                    style={[styles.subCheckbox, sub.done && styles.subCheckboxDone]}
+                    onPress={() => onToggleSubtask(task.id, sub.id)}
+                    activeOpacity={0.7}
+                    hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+                  >
+                    {sub.done && <Text style={styles.subCheckmark}>✓</Text>}
+                  </TouchableOpacity>
+
+                  {/* Title */}
+                  <Text style={[styles.subTitle, sub.done && styles.subTitleDone]} numberOfLines={2}>
+                    {sub.title}
+                  </Text>
+
+                  {/* Delete subtask */}
+                  <TouchableOpacity
+                    onPress={() => onDeleteSubtask(task.id, sub.id)}
+                    hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+                    style={styles.subDeleteBtn}
+                  >
+                    <Text style={styles.subDeleteText}>×</Text>
+                  </TouchableOpacity>
+                </View>
+              );
+            })}
+
+            {/* Add subtask input */}
+            {addingSubtask ? (
+              <View style={styles.subtaskRow}>
+                <View style={styles.branchWrapper}>
+                  <View style={styles.branchHorizontal} />
+                </View>
+                <TextInput
+                  style={styles.subInput}
+                  value={newSubtask}
+                  onChangeText={setNewSubtask}
+                  placeholder="Текст подзадачи..."
+                  placeholderTextColor={colors.muted}
+                  autoFocus
+                  onSubmitEditing={handleAddSubtask}
+                  returnKeyType="done"
+                />
+                <TouchableOpacity
+                  style={styles.subAddConfirm}
+                  onPress={handleAddSubtask}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.subAddConfirmText}>+</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={() => { setAddingSubtask(false); setNewSubtask(''); }}
+                  hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+                  style={styles.subDeleteBtn}
+                >
+                  <Text style={styles.subDeleteText}>×</Text>
+                </TouchableOpacity>
+              </View>
+            ) : null}
+          </View>
+        </View>
+      )}
+
+      {/* Add subtask button */}
+      <TouchableOpacity
+        style={styles.addSubtaskBtn}
+        onPress={() => setAddingSubtask(true)}
+        activeOpacity={0.7}
+      >
+        <Text style={styles.addSubtaskText}>+ подзадача</Text>
+      </TouchableOpacity>
+
       {/* ── Edit modal ── */}
       <Modal
         visible={modalVisible}
@@ -317,7 +423,7 @@ export default function TaskCard({ task, onToggle, onDelete, onUpdate }: Props) 
   );
 }
 
-// ─── Styles ───────────────────────────────────────────────────────────────────
+//Styles
 
 const styles = StyleSheet.create({
   card: {
@@ -525,5 +631,111 @@ const styles = StyleSheet.create({
     fontSize:   14,
     fontWeight: '600',
     color:      '#fff',
+  },
+
+  // ── Subtasks ──
+  subtasksWrapper: {
+    flexDirection:  'row',
+    paddingLeft:    spacing.md + 6,  // align with card content
+    marginBottom:   2,
+  },
+  connectorLine: {
+    width:           1,
+    backgroundColor: colors.border2,
+    marginLeft:      spacing.md,
+    marginRight:     0,
+  },
+  subtasksContent: {
+    flex: 1,
+    paddingLeft: spacing.xs,
+  },
+  subtaskRow: {
+    flexDirection:  'row',
+    alignItems:     'center',
+    gap:            spacing.xs + 2,
+    paddingVertical: 5,
+  },
+  branchWrapper: {
+    width:       16,
+    alignItems:  'flex-end',
+    paddingTop:  1,
+  },
+  branchHorizontal: {
+    width:           10,
+    height:          1,
+    backgroundColor: colors.border2,
+  },
+  subCheckbox: {
+    width:           16,
+    height:          16,
+    borderRadius:    4,
+    borderWidth:     1.5,
+    borderColor:     colors.border2,
+    backgroundColor: 'transparent',
+    alignItems:      'center',
+    justifyContent:  'center',
+    flexShrink:      0,
+  },
+  subCheckboxDone: {
+    backgroundColor: colors.accent,
+    borderColor:     colors.accent,
+  },
+  subCheckmark: {
+    color:      '#fff',
+    fontSize:   9,
+    lineHeight: 12,
+  },
+  subTitle: {
+    flex:       1,
+    fontSize:   13,
+    color:      colors.text,
+    lineHeight: 18,
+  },
+  subTitleDone: {
+    textDecorationLine: 'line-through',
+    color:              colors.muted,
+  },
+  subDeleteBtn: {
+    padding:    2,
+    flexShrink: 0,
+  },
+  subDeleteText: {
+    fontSize:   16,
+    color:      colors.muted,
+    lineHeight: 18,
+  },
+  subInput: {
+    flex:              1,
+    backgroundColor:   colors.surface2,
+    borderWidth:       1,
+    borderColor:       colors.accent,
+    borderRadius:      6,
+    color:             colors.text,
+    fontSize:          13,
+    paddingHorizontal: spacing.sm,
+    paddingVertical:   3,
+  },
+  subAddConfirm: {
+    backgroundColor: colors.accent,
+    borderRadius:    6,
+    paddingHorizontal: spacing.sm,
+    paddingVertical:   3,
+  },
+  subAddConfirmText: {
+    color:      '#fff',
+    fontSize:   16,
+    lineHeight: 20,
+    fontWeight: '600',
+  },
+  addSubtaskBtn: {
+    marginLeft:   spacing.md + 6 + spacing.md + 1,  // align under card content
+    marginBottom: spacing.sm,
+    marginTop:    -spacing.xs,
+    alignSelf:    'flex-start',
+  },
+  addSubtaskText: {
+    fontSize:   12,
+    color:      colors.muted,
+    fontWeight: '500',
   },
 });

@@ -38,6 +38,9 @@ export default function HomeScreen() {
     confirmPending, rejectPending,
     toggleDone, deleteTask, updateTask, clearAll,
     setFilter, setSortBy,
+    addSubtask,
+    toggleSubtask,
+    deleteSubtask,
   } = useTasks();
   
   //Actions
@@ -178,21 +181,24 @@ export default function HomeScreen() {
             <Text style={styles.tasksCount}>{countLabel}</Text>
           ) : null}
 
-          {/* ── Active tasks ── */}
-          {visibleActive.map(task => (
-            <TaskCard
-              key={task.id}
-              task={task}
-              onToggle={toggleDone}
-              onDelete={deleteTask}
-              onUpdate={updateTask}
-            />
-          ))}
+          {/*Active tasks*/}
+            {visibleActive.map(task => (
+              <TaskCard
+                key={task.id}
+                task={task}
+                onToggle={toggleDone}
+                onDelete={deleteTask}
+                onUpdate={updateTask}
+                onAddSubtask={addSubtask}       
+                onToggleSubtask={toggleSubtask} 
+                onDeleteSubtask={deleteSubtask} 
+              />
+            ))}
 
           {/*Empty state*/}
           {showEmpty && <EmptyState />}
 
-          {/* ── Done section ── */}
+          {/*Done section*/}
           {showDoneSection && (
             <>
               <View style={styles.doneDivider}>
@@ -207,10 +213,13 @@ export default function HomeScreen() {
                   onToggle={toggleDone}
                   onDelete={deleteTask}
                   onUpdate={updateTask}
+                  onAddSubtask={addSubtask}       
+                  onToggleSubtask={toggleSubtask} 
+                  onDeleteSubtask={deleteSubtask} 
                 />
               ))}
-            </>
-          )}
+        </>
+      )}
 
           {/* bottom padding */}
           <View style={{ height: spacing.xxl * 2 }} />

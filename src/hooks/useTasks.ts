@@ -83,6 +83,40 @@ export function useTasks() {
     persist(tasks.map(t => t.id === id ? { ...t, ...changes } : t));
   }, [tasks, persist]);
 
+  //Subtask actions
+
+  const addSubtask = useCallback((taskId: string, title: string) => {
+    if (!title.trim()) return;
+    const newSub: import('../utils/parser').Subtask = {
+      id:    `sub-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+      title: title.trim(),
+      done:  false,
+    };
+    persist(tasks.map(t =>
+      t.id === taskId
+        ? { ...t, subtasks: [...(t.subtasks ?? []), newSub] }
+        : t
+    ));
+  }, [tasks, persist]);
+
+  const toggleSubtask = useCallback((taskId: string, subtaskId: string) => {
+    persist(tasks.map(t =>
+      t.id === taskId
+        ? { ...t, subtasks: (t.subtasks ?? []).map(s =>
+            s.id === subtaskId ? { ...s, done: !s.done } : s
+          )}
+        : t
+    ));
+  }, [tasks, persist]);
+
+  const deleteSubtask = useCallback((taskId: string, subtaskId: string) => {
+    persist(tasks.map(t =>
+      t.id === taskId
+        ? { ...t, subtasks: (t.subtasks ?? []).filter(s => s.id !== subtaskId) }
+        : t
+    ));
+  }, [tasks, persist]);
+
   const clearAll = useCallback(() => {
     persist([]);
     setPending([]);
@@ -117,6 +151,9 @@ export function useTasks() {
     toggleDone,
     deleteTask,
     updateTask,
+    addSubtask,
+    toggleSubtask,
+    deleteSubtask,
     clearAll,
     setFilter,
     setSortBy,
