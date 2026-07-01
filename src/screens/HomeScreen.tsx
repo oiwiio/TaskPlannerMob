@@ -36,10 +36,10 @@ export default function HomeScreen() {
     visibleActive, visibleDone,
     parse,
     confirmPending, rejectPending,
-    toggleDone, deleteTask, clearAll,
+    toggleDone, deleteTask, updateTask, clearAll,
     setFilter, setSortBy,
   } = useTasks();
-
+  
   //Actions
 
   function handleParse() {
@@ -99,7 +99,7 @@ export default function HomeScreen() {
           showsVerticalScrollIndicator={false}
         >
 
-          {/* ── Header ── */}
+          {/*Header*/}
           <View style={styles.header}>
             <View style={styles.logoRow}>
               <View style={styles.logoDot} />
@@ -162,7 +162,7 @@ export default function HomeScreen() {
             onReject={rejectPending}
           />
 
-          {/* ── Filters ── */}
+          {/*Filters*/}
           <FilterBar
             filter={filter}
             sortBy={sortBy}
@@ -185,6 +185,7 @@ export default function HomeScreen() {
               task={task}
               onToggle={toggleDone}
               onDelete={deleteTask}
+              onUpdate={updateTask}
             />
           ))}
 
@@ -205,6 +206,7 @@ export default function HomeScreen() {
                   task={task}
                   onToggle={toggleDone}
                   onDelete={deleteTask}
+                  onUpdate={updateTask}
                 />
               ))}
             </>
